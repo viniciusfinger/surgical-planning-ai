@@ -1,6 +1,6 @@
-def main():
-    print("Hello from surgical-planning-ai!")
+from fastapi import FastAPI
 
+from controller.hello_controller import router as hello_router
 
-if __name__ == "__main__":
-    main()
+app = FastAPI(title="surgical-planning-ai", version="0.1.0")
+app.include_router(hello_router)
