@@ -1,7 +1,7 @@
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
-from graph.nodes.risk_classifier_node import risk_classifier_node
+from graph.nodes.risk_classifier_node import ASA_classifier_node
 from graph.state import GraphState
 
 
@@ -10,9 +10,9 @@ _compiled: CompiledStateGraph | None = None
 
 def _create_graph() -> CompiledStateGraph:
     graph = StateGraph(GraphState)
-    graph.add_node("risk_classifier_node", risk_classifier_node)
-    graph.add_edge(START, "risk_classifier_node")
-    graph.add_edge("risk_classifier_node", END)
+    graph.add_node("ASA_classifier_node", ASA_classifier_node)
+    graph.add_edge(START, "ASA_classifier_node")
+    graph.add_edge("ASA_classifier_node", END)
     return graph.compile()
 
 
