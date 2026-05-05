@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 
-from api.schema.urgency import Urgency
 from datetime import date
+
+from domain.schema.urgency import Urgency
 
 class SurgicalPlanningInput(BaseModel):
     birthdate: date
