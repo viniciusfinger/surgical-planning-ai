@@ -1,12 +1,10 @@
-from typing import Annotated, TypedDict
-from langchain.messages import AnyMessage
-import operator
+from typing import TypedDict
 
+from domain.schema.comorbidity import Comorbidity
 from domain.schema.urgency import Urgency
 
 class GraphState(TypedDict):
-    messages: Annotated[list[AnyMessage], operator.add]
     age: int
-    comorbidity: list[str]
+    comorbidities: list[Comorbidity]
     surgical_type: str
     urgency: Urgency
