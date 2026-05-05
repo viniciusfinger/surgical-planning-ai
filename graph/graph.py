@@ -1,7 +1,7 @@
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
-from graph.nodes import risk_classifier_node
+from graph.nodes.risk_classifier_node import risk_classifier_node
 from graph.state import GraphState
 
 
