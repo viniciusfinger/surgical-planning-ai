@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 
+from domain.schema.severity import Severity
+
 
 class Comorbidity(BaseModel):
     name: str
-    severity: str #TODO: create enum for mild / moderate / severe
+    severity: Severity
     controlled: bool
