@@ -5,7 +5,7 @@ from fastapi import APIRouter
 from api.schema.surgical_planning_input import SurgicalPlanningInput
 from graph.graph import get_graph
 
-router = APIRouter(prefix="surgical-planning")
+router = APIRouter(prefix="/surgical-planning")
 
 
 @router.post("/")
