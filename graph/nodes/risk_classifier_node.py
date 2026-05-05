@@ -7,6 +7,14 @@ from langchain_core.prompts import ChatPromptTemplate
 
 #TODO: Test approach to run 5 times with temperature > 0.7 and merge the most common result to be the final result
 def ASA_classifier_node(state: GraphState) -> dict[str, ASAOutput]:
+    """
+    Infer ASA (American Society of Anesthesiologists Physical Status Classification) based on age and comorbidities
+
+    A system used to assess a patient's preoperative physical status and anesthetic risk
+    based on the presence and severity of systemic diseases.
+
+    Classes range from ASA I (healthy) to ASA VI (brain-dead organ donor),
+    """
 
     prompt = ChatPromptTemplate.from_template(
         """
