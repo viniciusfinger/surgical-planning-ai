@@ -1,7 +1,10 @@
 from pydantic import BaseModel
 
+from api.schema.urgency import Urgency
+from datetime import date
+
 class SurgicalPlanningInput(BaseModel):
-    age: int #TODO: Age or birthdate?
+    birthdate: date
     comorbidity: list[str]
     surgical_type: str
-    urgency: str #TODO: create enum?
+    urgency: Urgency
