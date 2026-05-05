@@ -4,4 +4,4 @@ from enum import Enum
 class Severity(str, Enum):
     mild = "mild"
     moderate = "moderate"
-    controlled = "controlled"
+    severe = "severe"
