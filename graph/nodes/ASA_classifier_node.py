@@ -47,7 +47,9 @@ def ASA_classifier_node(state: GraphState) -> dict[str, ASAOutput]:
 
         - Only mild AND controlled conditions → ASA II
 
-        - Mild but uncontrolled condition → ASA II-III (lean III if impactful)
+        - Mild but uncontrolled condition → usually ASA II; lean ASA III only if the disease is
+          materially impactful perioperatively (functional limitation, acute instability, or
+          high-risk context), otherwise remain II
 
         - Any moderate condition:
             - Controlled → ASA II
@@ -72,6 +74,11 @@ def ASA_classifier_node(state: GraphState) -> dict[str, ASAOutput]:
 
         4. General rule:
         - Prefer conservative classification (bias toward higher risk when uncertain)
+
+        5. Justification:
+        Justificate using concise and direct references to the classification criteria (age and comorbidities)
+        
+        Example: "Patient presents uncontrolled moderate ischemic heart disease associated with uncontrolled severe COPD, representing advanced systemic disease with high perioperative risk and constant potential threat to life due to combined cardiovascular and respiratory compromise.
         """
     )
 
