@@ -1,4 +1,5 @@
 app_idea.md
+evaluation-improvement.md
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
