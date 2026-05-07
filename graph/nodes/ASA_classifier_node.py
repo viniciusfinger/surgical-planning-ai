@@ -1,6 +1,4 @@
-import json
-
-from graph.schema.ASAOutput import ASAOutput
+from graph.schema.ASA_output import ASAOutput
 from graph.state import GraphState
 from langchain.chat_models import init_chat_model
 from langchain_core.prompts import ChatPromptTemplate
