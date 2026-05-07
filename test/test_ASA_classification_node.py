@@ -6,6 +6,7 @@ from graph.nodes.ASA_classifier_node import ASA_classifier_node
 
 
 def test_asa_healthy_patient():
+    """Test ASA for healthy patient"""
     state = {
         "age": 25,
         "comorbidities": [],
@@ -58,6 +59,7 @@ def test_asa_healthy_patient():
 
 
 def test_asa_severe_uncontrolled():
+    """Test ASA for severe uncontrolled heart failure"""
     state = {
         "age": 72,
         "comorbidities": [
@@ -117,6 +119,7 @@ def test_asa_severe_uncontrolled():
 
 
 def test_asa_mild_controlled_single_condition():
+    """Test ASA for mild controlled hypertension"""
     state = {
         "age": 48,
         "comorbidities": [
@@ -170,6 +173,7 @@ def test_asa_mild_controlled_single_condition():
 
 
 def test_asa_moderate_controlled_single_condition():
+    """Test ASA for moderate controlled COPD"""
     state = {
         "age": 61,
         "comorbidities": [
@@ -221,6 +225,7 @@ def test_asa_moderate_controlled_single_condition():
 
 
 def test_asa_moderate_uncontrolled():
+    """Test ASA for moderate uncontrolled asthma"""
     state = {
         "age": 54,
         "comorbidities": [
@@ -274,6 +279,7 @@ def test_asa_moderate_uncontrolled():
 
 
 def test_asa_severe_controlled():
+    """Test ASA for severe controlled chronic kidney disease"""
     state = {
         "age": 69,
         "comorbidities": [
@@ -325,6 +331,7 @@ def test_asa_severe_controlled():
 
 
 def test_asa_elderly_no_comorbidities_age_alone_not_enough():
+    """Test ASA for elderly patient with no comorbidities"""
     state = {
         "age": 88,
         "comorbidities": [],
@@ -370,6 +377,7 @@ def test_asa_elderly_no_comorbidities_age_alone_not_enough():
 
 
 def test_asa_pediatric_healthy():
+    """Test ASA for pediatric healthy patient"""
     state = {
         "age": 9,
         "comorbidities": [],
@@ -415,6 +423,7 @@ def test_asa_pediatric_healthy():
 
 
 def test_asa_mild_uncontrolled_boundary():
+    """Test ASA for mild uncontrolled hypothyroidism"""
     state = {
         "age": 33,
         "comorbidities": [
@@ -471,6 +480,7 @@ def test_asa_mild_uncontrolled_boundary():
 
 
 def test_asa_two_moderate_controlled_escalation():
+    """Test ASA for two moderate controlled comorbidities"""
     state = {
         "age": 67,
         "comorbidities": [
@@ -527,6 +537,8 @@ def test_asa_two_moderate_controlled_escalation():
 
 
 def test_asa_mixed_moderate_severe_uncontrolled_range():
+    """Test ASA for mixed moderate and severe uncontrolled cardiopulmonary disease"""
+
     state = {
         "age": 71,
         "comorbidities": [
@@ -584,6 +596,8 @@ def test_asa_mixed_moderate_severe_uncontrolled_range():
 
 
 def test_asa_moribund_septic_shock():
+    """Test ASA for moribund patient with septic shock and multi-organ failure"""
+    
     state = {
         "age": 58,
         "comorbidities": [
