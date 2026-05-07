@@ -3,6 +3,11 @@ from pydantic import BaseModel, Field
 
 
 class ChecklistItem(BaseModel):
+    """
+    Represents a single item in a perioperative safety checklist phase. 
+    Each item corresponds to a discrete safety verification step.
+    """
+
     item: str = Field(description="Short name or label of the checklist item.")
     alert: bool = Field(
         default=False,
@@ -18,6 +23,15 @@ class ChecklistItem(BaseModel):
 
 
 class PerioperativeChecklistOutput(BaseModel):
+    """
+    Models a three-phase surgical safety checklist dynamically tailored to the patient's profile.
+
+    Phases:
+        - Sign-in: Checks completed before induction of anesthesia
+        - Time-out: Final team pause immediately before skin incision
+        - Sign-out: Verification steps before the patient leaves the Operating Room
+    """
+
     sign_in: list[ChecklistItem] = Field(
         description=(
             "Phase 1 — Before induction of anesthesia. "

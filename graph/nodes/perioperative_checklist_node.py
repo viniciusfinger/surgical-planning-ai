@@ -5,10 +5,14 @@ from graph.schema.perioperative_checklist_output import PerioperativeChecklistOu
 
 
 def perioperative_checklist_node(state: state):
+    """
+    Generates a WHO Surgical Safety Checklist (Sign-In, Time-Out, Sign-Out)
+    tailored to the patient's profile across any surgical specialty.
+    """
     prompt = ChatPromptTemplate.from_template(
         """
         You are a senior perioperative safety officer responsible for completing the WHO Surgical Safety Checklist
-        for an oral and maxillofacial surgery (OMS) procedure. Your task is to evaluate the patient data below
+        for any surgical procedure across all specialties. Your task is to evaluate the patient data below
         and dynamically generate a clinically grounded checklist for each of the three standard phases:
         Sign-In (before anesthesia induction), Time-Out (before skin incision), and Sign-Out (before the patient
         leaves the operating room).
