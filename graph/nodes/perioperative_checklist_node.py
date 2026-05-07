@@ -42,17 +42,34 @@ def perioperative_checklist_node(state: state):
         5. `critical_alerts` MUST be empty for ASA I and ASA II patients with controlled disease.
            Populate `critical_alerts` ONLY when `overall_status` is "critical", with a clear, actionable
            description of each unresolved life-threatening issue.
-        6. `recommendations` are non-blocking, informational suggestions and MUST be specific to each
-           comorbidity present. Apply the following minimum coverage rules:
-           - Hypertension → include perioperative blood pressure monitoring and antihypertensive continuation.
-           - Diabetes → include glucose monitoring, glycemic control targets, and wound healing considerations.
-           - COPD/Asthma → include pulmonary optimization and bronchodilator availability.
-           - Heart failure / ischemic heart disease → include cardiology consult before proceeding when
-             severity is moderate or higher, plus advanced hemodynamic monitoring.
-           - Chronic kidney disease → include renal function review and avoidance of nephrotoxic agents.
-           - Septic shock / multi-organ failure → include ICU-level monitoring, vasopressor readiness, and
-             resuscitation plan.
-           Each recommendation must be a complete, standalone sentence — never reference critical_alerts as
+        6. Comorbidity-driven minimum coverage. For every comorbidity present, the output MUST contain
+           the corresponding checklist items in the indicated phases AND recommendations.
+           Items must be added in addition to (not replacing) the standard WHO checklist items.
+           - Hypertension:
+             * Sign-In: blood pressure / antihypertensive medication review item.
+             * Recommendations: perioperative blood pressure monitoring and antihypertensive continuation.
+           - Diabetes:
+             * Sign-In or Time-Out: blood glucose / glycemic control item.
+             * Recommendations: glucose monitoring, glycemic control targets, and wound healing
+               considerations.
+           - COPD / Asthma / any chronic pulmonary disease:
+             * Sign-In: a "Difficult airway assessment" item AND a "Bronchodilator availability" item
+               (these are mandatory and must appear with these or equivalent labels).
+             * Time-Out: a "Ventilation plan / oxygen reserve" item explicitly referencing oxygen
+               reserve, ventilation strategy, or pulmonary recruitment.
+             * Recommendations: pulmonary optimization and bronchodilator availability.
+           - Heart failure / ischemic heart disease:
+             * Sign-In: cardiac stability verification item (e.g., ECG / echocardiography review,
+               anti-anginal medication review, hemodynamic monitoring setup).
+             * Recommendations: cardiology consult before proceeding when severity is moderate or
+               higher, plus advanced hemodynamic monitoring.
+           - Chronic kidney disease:
+             * Sign-In: renal function review and nephrotoxic agent avoidance item.
+             * Recommendations: renal function review and avoidance of nephrotoxic agents.
+           - Septic shock / multi-organ failure:
+             * Sign-In: ICU-level monitoring requirement and resuscitation readiness item.
+             * Recommendations: ICU-level monitoring, vasopressor readiness, and resuscitation plan.
+           Recommendations must be complete, standalone sentences — never reference critical_alerts as
            a substitute for an explicit recommendation entry.
         7. Pediatric considerations (age < 18 years): the Sign-In MUST include weight-based drug dosing
            verification AND parental/guardian informed consent, and at least one item must address
