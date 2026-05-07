@@ -33,12 +33,35 @@ def perioperative_checklist_node(state: state):
            conflicting with standard antibiotic prophylaxis). When `alert=True`, `notes` must include a concise
            clinical justification and the recommended corrective action or precaution.
         4. For `overall_status`:
-           - Use "critical" if any item presents an unresolved patient safety conflict that could result in harm.
-           - Use "hold" if one or more items require team review or verification before proceeding.
-           - Use "clear" only if all phases are fully verified and no alerts are present.
-        5. Populate `critical_alerts` with a clear, actionable description of each critical issue found.
-        6. Populate `recommendations` with non-blocking but clinically relevant suggestions to optimize
-           perioperative safety and recovery, informed by the patient's age, comorbidities, and ASA class.
+           - Use "critical" ONLY if at least one unresolved safety conflict could result in immediate harm
+             (typical for ASA IV or V, or unresolved severe uncontrolled disease).
+           - Use "hold" when one or more items require team review or verification before proceeding
+             (typical for ASA II or III with relevant alerts).
+           - Use "clear" when all phases are fully verified and no alerts are present
+             (typical for ASA I; or ASA II with fully controlled disease and no item flagged alert=True).
+        5. `critical_alerts` MUST be empty for ASA I and ASA II patients with controlled disease.
+           Populate `critical_alerts` ONLY when `overall_status` is "critical", with a clear, actionable
+           description of each unresolved life-threatening issue.
+        6. `recommendations` are non-blocking, informational suggestions and MUST be specific to each
+           comorbidity present. Apply the following minimum coverage rules:
+           - Hypertension → include perioperative blood pressure monitoring and antihypertensive continuation.
+           - Diabetes → include glucose monitoring, glycemic control targets, and wound healing considerations.
+           - COPD/Asthma → include pulmonary optimization and bronchodilator availability.
+           - Heart failure / ischemic heart disease → include cardiology consult before proceeding when
+             severity is moderate or higher, plus advanced hemodynamic monitoring.
+           - Chronic kidney disease → include renal function review and avoidance of nephrotoxic agents.
+           - Septic shock / multi-organ failure → include ICU-level monitoring, vasopressor readiness, and
+             resuscitation plan.
+           Each recommendation must be a complete, standalone sentence — never reference critical_alerts as
+           a substitute for an explicit recommendation entry.
+        7. Pediatric considerations (age < 18 years): the Sign-In MUST include weight-based drug dosing
+           verification AND parental/guardian informed consent, and at least one item must address
+           pediatric airway considerations (smaller airway, age-appropriate equipment).
+        8. Geriatric considerations (age ≥ 65 years): include at least one item addressing fragility,
+           polypharmacy review, and risk of postoperative delirium / pressure injury.
+        9. Internal consistency rule: if `overall_status` is "clear", then no item may have `alert=True`
+           and `critical_alerts` must be empty. If `overall_status` is "critical", then `critical_alerts`
+           must be non-empty.
 
         Be precise, evidence-based, and consistent with current WHO and ACSA perioperative safety guidelines.
         """
