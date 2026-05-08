@@ -11,7 +11,8 @@ dependencies = [
     "langgraph>=1.1.10",
     "langchain>=1.2.17",
     "langchain-openai>=1.2.1",
-    "deepeval>=3.9.9"
+    "deepeval>=3.9.9",
+    "guardrails-ai>=0.10.0"
 ]
 
 [tool.pytest.ini_options]
