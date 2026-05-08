@@ -41,23 +41,31 @@ START
 ### Layers of defense
 
 1. **Pydantic structural validation** (`api/schema/`, `domain/schema/`)
-   - Typed enums, length and date ranges, list size caps, comorbidity uniqueness.
+  - Typed enums, length and date ranges, list size caps, comorbidity uniqueness.
 2. **Pre-LLM guard** (`graph/nodes/input_guard_node.py`)
-   - Validates every free-text field that will be interpolated in a prompt
-     (`comorbidity.name`, `surgical_type`).
-   - Backed by [Guardrails AI](https://github.com/guardrails-ai/guardrails)
-     with custom validators in `safety/validators.py`:
-     `NoPromptInjection`, `ClinicalScopeOnly`, `NoPII`, `LengthBounds`.
+  - Validates every free-text field that will be interpolated in a prompt
+   (`comorbidity.name`, `surgical_type`).
+  - Backed by [Guardrails AI](https://github.com/guardrails-ai/guardrails)
+  with custom validators in `safety/validators.py`:
+  `NoPromptInjection`, `ClinicalScopeOnly`, `NoPII`, `LengthBounds`.
 3. **Trust-boundary prompts**
-   - All three LLM nodes wrap dynamic data inside `<patient_data>...</patient_data>`
-     and instruct the model to treat that block as data, never as instructions.
+  - All three LLM nodes wrap dynamic data inside `<patient_data>...</patient_data>`
+   and instruct the model to treat that block as data, never as instructions.
 4. **Deterministic critic** (`graph/nodes/critic_node.py`)
-   - Internal-consistency rules (`overall_status` vs `critical_alerts` vs item-level alerts).
-   - ASA / postoperative destination conflict (ASA IV-V routed to ward).
-   - NSAID safety against contraindicating comorbidities.
-   - Re-validates every free-text field produced by the LLM (PII, scope).
+  - Internal-consistency rules (`overall_status` vs `critical_alerts` vs item-level alerts).
+  - ASA / postoperative destination conflict (ASA IV-V routed to ward).
+  - NSAID safety against contraindicating comorbidities.
+  - Re-validates every free-text field produced by the LLM (PII, scope).
 5. **Domain exception + audit log**
-   - All violations raise `safety.exceptions.GuardrailViolation`.
-   - The FastAPI handler in `app/main.py` translates them into HTTP 422
-     with a non-leaky public message and writes the structured detail to
-     the `safety.audit` logger for compliance review.
+  - All violations raise `safety.exceptions.GuardrailViolation`.
+  - The FastAPI handler in `app/main.py` translates them into HTTP 422
+  with a non-leaky public message and writes the structured detail to
+  the `safety.audit` logger for compliance review.
+
+## TODO List
+
+- [ ] Discovery + Implement deterministic tools/functions for clinical scores and calculations (Caprini, Apfel, Lee, ...);
+- [ ] Test + Implement self-consistency with multiple samples in ASA classifier;
+- [ ] Add human-in-the-loop (HITL) routing policy for low confidence, ASA >= III, urgency, pediatrics, or critic conflict;
+- [ ] Discovery + Implementt RAG with mandatory citation and runtime verification of recommendations
+
