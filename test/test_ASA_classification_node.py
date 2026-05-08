@@ -5,14 +5,14 @@ from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from graph.nodes.ASA_classifier_node import ASA_classifier_node
 
 
-def test_asa_healthy_patient():
+async def test_asa_healthy_patient():
     """Test ASA for healthy patient"""
     state = {
         "age": 25,
         "comorbidities": [],
     }
 
-    result = ASA_classifier_node(state)
+    result = await ASA_classifier_node(state)
 
     asa_output = result["asa"]
 
@@ -58,7 +58,7 @@ def test_asa_healthy_patient():
     assert_test(test_case, [metric])
 
 
-def test_asa_severe_uncontrolled():
+async def test_asa_severe_uncontrolled():
     """Test ASA for severe uncontrolled heart failure"""
     state = {
         "age": 72,
@@ -71,7 +71,7 @@ def test_asa_severe_uncontrolled():
         ],
     }
 
-    result = ASA_classifier_node(state)
+    result = await ASA_classifier_node(state)
 
     asa_output = result["asa"]
 
@@ -118,7 +118,7 @@ def test_asa_severe_uncontrolled():
     assert_test(test_case, [metric])
 
 
-def test_asa_mild_controlled_single_condition():
+async def test_asa_mild_controlled_single_condition():
     """Test ASA for mild controlled hypertension"""
     state = {
         "age": 48,
@@ -131,7 +131,7 @@ def test_asa_mild_controlled_single_condition():
         ],
     }
 
-    result = ASA_classifier_node(state)
+    result = await ASA_classifier_node(state)
 
     asa_output = result["asa"]
 
@@ -172,7 +172,7 @@ def test_asa_mild_controlled_single_condition():
     assert_test(test_case, [metric])
 
 
-def test_asa_moderate_controlled_single_condition():
+async def test_asa_moderate_controlled_single_condition():
     """Test ASA for moderate controlled COPD"""
     state = {
         "age": 61,
@@ -185,7 +185,7 @@ def test_asa_moderate_controlled_single_condition():
         ],
     }
 
-    result = ASA_classifier_node(state)
+    result = await ASA_classifier_node(state)
 
     asa_output = result["asa"]
 
@@ -224,7 +224,7 @@ def test_asa_moderate_controlled_single_condition():
     assert_test(test_case, [metric])
 
 
-def test_asa_moderate_uncontrolled():
+async def test_asa_moderate_uncontrolled():
     """Test ASA for moderate uncontrolled asthma"""
     state = {
         "age": 54,
@@ -237,7 +237,7 @@ def test_asa_moderate_uncontrolled():
         ],
     }
 
-    result = ASA_classifier_node(state)
+    result = await ASA_classifier_node(state)
 
     asa_output = result["asa"]
 
@@ -278,7 +278,7 @@ def test_asa_moderate_uncontrolled():
     assert_test(test_case, [metric])
 
 
-def test_asa_severe_controlled():
+async def test_asa_severe_controlled():
     """Test ASA for severe controlled chronic kidney disease"""
     state = {
         "age": 69,
@@ -291,7 +291,7 @@ def test_asa_severe_controlled():
         ],
     }
 
-    result = ASA_classifier_node(state)
+    result = await ASA_classifier_node(state)
 
     asa_output = result["asa"]
 
@@ -330,14 +330,14 @@ def test_asa_severe_controlled():
     assert_test(test_case, [metric])
 
 
-def test_asa_elderly_no_comorbidities_age_alone_not_enough():
+async def test_asa_elderly_no_comorbidities_age_alone_not_enough():
     """Test ASA for elderly patient with no comorbidities"""
     state = {
         "age": 88,
         "comorbidities": [],
     }
 
-    result = ASA_classifier_node(state)
+    result = await ASA_classifier_node(state)
 
     asa_output = result["asa"]
 
@@ -376,14 +376,14 @@ def test_asa_elderly_no_comorbidities_age_alone_not_enough():
     assert_test(test_case, [metric])
 
 
-def test_asa_pediatric_healthy():
+async def test_asa_pediatric_healthy():
     """Test ASA for pediatric healthy patient"""
     state = {
         "age": 9,
         "comorbidities": [],
     }
 
-    result = ASA_classifier_node(state)
+    result = await ASA_classifier_node(state)
 
     asa_output = result["asa"]
 
@@ -422,7 +422,7 @@ def test_asa_pediatric_healthy():
     assert_test(test_case, [metric])
 
 
-def test_asa_mild_uncontrolled_boundary():
+async def test_asa_mild_uncontrolled_boundary():
     """Test ASA for mild uncontrolled hypothyroidism"""
     state = {
         "age": 33,
@@ -435,7 +435,7 @@ def test_asa_mild_uncontrolled_boundary():
         ],
     }
 
-    result = ASA_classifier_node(state)
+    result = await ASA_classifier_node(state)
 
     asa_output = result["asa"]
 
@@ -479,7 +479,7 @@ def test_asa_mild_uncontrolled_boundary():
     assert_test(test_case, [metric])
 
 
-def test_asa_two_moderate_controlled_escalation():
+async def test_asa_two_moderate_controlled_escalation():
     """Test ASA for two moderate controlled comorbidities"""
     state = {
         "age": 67,
@@ -497,7 +497,7 @@ def test_asa_two_moderate_controlled_escalation():
         ],
     }
 
-    result = ASA_classifier_node(state)
+    result = await ASA_classifier_node(state)
 
     asa_output = result["asa"]
 
@@ -536,7 +536,7 @@ def test_asa_two_moderate_controlled_escalation():
     assert_test(test_case, [metric])
 
 
-def test_asa_mixed_moderate_severe_uncontrolled_range():
+async def test_asa_mixed_moderate_severe_uncontrolled_range():
     """Test ASA for mixed moderate and severe uncontrolled cardiopulmonary disease"""
 
     state = {
@@ -555,7 +555,7 @@ def test_asa_mixed_moderate_severe_uncontrolled_range():
         ],
     }
 
-    result = ASA_classifier_node(state)
+    result = await ASA_classifier_node(state)
 
     asa_output = result["asa"]
 
@@ -595,7 +595,7 @@ def test_asa_mixed_moderate_severe_uncontrolled_range():
     assert_test(test_case, [metric])
 
 
-def test_asa_moribund_septic_shock():
+async def test_asa_moribund_septic_shock():
     """Test ASA for moribund patient with septic shock and multi-organ failure"""
     
     state = {
@@ -609,7 +609,7 @@ def test_asa_moribund_septic_shock():
         ],
     }
 
-    result = ASA_classifier_node(state)
+    result = await ASA_classifier_node(state)
 
     asa_output = result["asa"]
 

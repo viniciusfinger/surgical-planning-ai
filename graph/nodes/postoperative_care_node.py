@@ -1,11 +1,16 @@
+import logging
+import time
+
 from langchain.chat_models import init_chat_model
 from langchain_core.prompts import ChatPromptTemplate
 
 from graph import state
 from graph.schema.postoperative_care_output import PostoperativeCareOutput
 
+_perf = logging.getLogger("perf")
 
-def postoperative_care_node(state: state):
+
+async def postoperative_care_node(state: state):
     """
     Generate a comprehensive, patient-specific postoperative care plan using perioperative state data.
     """
@@ -145,7 +150,9 @@ def postoperative_care_node(state: state):
 
     chain = prompt | llm
 
-    postoperative_care = chain.invoke(
+    _t0 = time.perf_counter()
+    _perf.info("POST START t=%.3f", _t0)
+    postoperative_care = await chain.ainvoke(
         {
             "age": state["age"],
             "comorbidities": state["comorbidities"],
@@ -154,5 +161,6 @@ def postoperative_care_node(state: state):
             "urgency": state["urgency"],
         }
     )
+    _perf.info("POST END   t=%.3f dur=%.3fs", time.perf_counter(), time.perf_counter() - _t0)
 
     return {"postoperative_care": postoperative_care}

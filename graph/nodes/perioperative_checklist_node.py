@@ -1,10 +1,15 @@
+import logging
+import time
+
 from langchain.chat_models import init_chat_model
 from langchain_core.prompts import ChatPromptTemplate
 from graph import state
 from graph.schema.perioperative_checklist_output import PerioperativeChecklistOutput
 
+_perf = logging.getLogger("perf")
 
-def perioperative_checklist_node(state: state):
+
+async def perioperative_checklist_node(state: state):
     """
     Generates a WHO Surgical Safety Checklist (Sign-In, Time-Out, Sign-Out)
     tailored to the patient's profile across any surgical specialty.
@@ -96,12 +101,15 @@ def perioperative_checklist_node(state: state):
 
     chain = prompt | llm
 
-    perioperative_checklist = chain.invoke(
+    _t0 = time.perf_counter()
+    _perf.info("PERI START t=%.3f", _t0)
+    perioperative_checklist = await chain.ainvoke(
         {
             "age": state["age"],
             "comorbidities": state["comorbidities"],
             "asa": state["asa"].asa
         }
     )
+    _perf.info("PERI END   t=%.3f dur=%.3fs", time.perf_counter(), time.perf_counter() - _t0)
 
     return {"perioperative_checklist": perioperative_checklist}

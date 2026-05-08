@@ -41,11 +41,11 @@ def _format_output(checklist) -> str:
     )
 
 
-def test_healthy_adult_asa_i_clear_status():
+async def test_healthy_adult_asa_i_clear_status():
     """Healthy adult with no comorbidities should yield overall_status='clear'."""
     state = _make_state(32, [], "I", "No systemic disease.")
 
-    result = perioperative_checklist_node(state)
+    result = await perioperative_checklist_node(state)
     checklist = result["perioperative_checklist"]
 
     assert checklist.overall_status == "clear"
@@ -86,7 +86,7 @@ def test_healthy_adult_asa_i_clear_status():
     assert_test(test_case, [metric])
 
 
-def test_mild_controlled_hypertension_asa_ii_clear_or_hold():
+async def test_mild_controlled_hypertension_asa_ii_clear_or_hold():
     """Mild controlled hypertension (ASA II) may produce hold status with relevant alerts."""
     state = _make_state(
         52,
@@ -95,7 +95,7 @@ def test_mild_controlled_hypertension_asa_ii_clear_or_hold():
         "Single mild controlled systemic disease.",
     )
 
-    result = perioperative_checklist_node(state)
+    result = await perioperative_checklist_node(state)
     checklist = result["perioperative_checklist"]
 
     assert checklist.overall_status in ("clear", "hold")
@@ -137,11 +137,11 @@ def test_mild_controlled_hypertension_asa_ii_clear_or_hold():
     assert_test(test_case, [metric])
 
 
-def test_all_three_phases_populated():
+async def test_all_three_phases_populated():
     """All three checklist phases must be populated for any patient."""
     state = _make_state(45, [], "I")
 
-    result = perioperative_checklist_node(state)
+    result = await perioperative_checklist_node(state)
     checklist = result["perioperative_checklist"]
 
     assert len(checklist.sign_in) >= 1
@@ -177,7 +177,7 @@ def test_all_three_phases_populated():
     assert_test(test_case, [metric])
 
 
-def test_moderate_uncontrolled_copd_asa_iii_airway_alert():
+async def test_moderate_uncontrolled_copd_asa_iii_airway_alert():
     """Moderate uncontrolled COPD (ASA III) should trigger airway or respiratory alerts."""
     state = _make_state(
         63,
@@ -186,7 +186,7 @@ def test_moderate_uncontrolled_copd_asa_iii_airway_alert():
         "Moderate uncontrolled COPD implies severe systemic limitation.",
     )
 
-    result = perioperative_checklist_node(state)
+    result = await perioperative_checklist_node(state)
     checklist = result["perioperative_checklist"]
 
     assert checklist.overall_status in ("hold", "critical")
@@ -231,7 +231,7 @@ def test_moderate_uncontrolled_copd_asa_iii_airway_alert():
     assert_test(test_case, [metric])
 
 
-def test_severe_uncontrolled_heart_failure_asa_iv_critical_status():
+async def test_severe_uncontrolled_heart_failure_asa_iv_critical_status():
     """Severe uncontrolled heart failure (ASA IV) should result in critical overall_status."""
     state = _make_state(
         74,
@@ -240,7 +240,7 @@ def test_severe_uncontrolled_heart_failure_asa_iv_critical_status():
         "Severe uncontrolled heart failure is a life-threatening systemic disease.",
     )
 
-    result = perioperative_checklist_node(state)
+    result = await perioperative_checklist_node(state)
     checklist = result["perioperative_checklist"]
 
     assert checklist.overall_status in ("hold", "critical")
@@ -281,7 +281,7 @@ def test_severe_uncontrolled_heart_failure_asa_iv_critical_status():
     assert_test(test_case, [metric])
 
 
-def test_recommendations_present_for_asa_ii_plus():
+async def test_recommendations_present_for_asa_ii_plus():
     """Patients with ASA II or above should always receive non-blocking recommendations."""
     state = _make_state(
         60,
@@ -290,7 +290,7 @@ def test_recommendations_present_for_asa_ii_plus():
         "Moderate controlled diabetes is mild systemic disease.",
     )
 
-    result = perioperative_checklist_node(state)
+    result = await perioperative_checklist_node(state)
     checklist = result["perioperative_checklist"]
 
     assert len(checklist.recommendations) > 0
@@ -332,11 +332,11 @@ def test_recommendations_present_for_asa_ii_plus():
 # ---------------------------------------------------------------------------
 
 
-def test_pediatric_healthy_patient():
+async def test_pediatric_healthy_patient():
     """Healthy child (ASA I) should get age-appropriate items without critical alerts."""
     state = _make_state(7, [], "I", "Healthy pediatric patient with no systemic disease.")
 
-    result = perioperative_checklist_node(state)
+    result = await perioperative_checklist_node(state)
     checklist = result["perioperative_checklist"]
 
     assert checklist.overall_status == "clear"
@@ -385,7 +385,7 @@ def test_pediatric_healthy_patient():
     assert_test(test_case, [metric])
 
 
-def test_elderly_multiple_comorbidities_asa_iii_hold():
+async def test_elderly_multiple_comorbidities_asa_iii_hold():
     """Elderly patient with multiple moderate comorbidities (ASA III) should produce hold status."""
     state = _make_state(
         81,
@@ -397,7 +397,7 @@ def test_elderly_multiple_comorbidities_asa_iii_hold():
         "Two moderate comorbidities in an elderly patient escalate to ASA III.",
     )
 
-    result = perioperative_checklist_node(state)
+    result = await perioperative_checklist_node(state)
     checklist = result["perioperative_checklist"]
 
     assert checklist.overall_status in ("hold", "critical")
@@ -434,7 +434,7 @@ def test_elderly_multiple_comorbidities_asa_iii_hold():
     assert_test(test_case, [metric])
 
 
-def test_moribund_patient_asa_v_critical_status_and_alerts():
+async def test_moribund_patient_asa_v_critical_status_and_alerts():
     """Moribund ASA V patient should yield critical status with multiple critical alerts."""
     state = _make_state(
         59,
@@ -443,7 +443,7 @@ def test_moribund_patient_asa_v_critical_status_and_alerts():
         "Moribund patient not expected to survive without immediate intervention.",
     )
 
-    result = perioperative_checklist_node(state)
+    result = await perioperative_checklist_node(state)
     checklist = result["perioperative_checklist"]
 
     assert checklist.overall_status == "critical"
@@ -481,7 +481,7 @@ def test_moribund_patient_asa_v_critical_status_and_alerts():
     assert_test(test_case, [metric])
 
 
-def test_alert_items_always_have_notes():
+async def test_alert_items_always_have_notes():
     """Any checklist item with alert=True must have non-empty notes."""
     state = _make_state(
         68,
@@ -490,7 +490,7 @@ def test_alert_items_always_have_notes():
         "Severe uncontrolled COPD is a severe systemic limitation.",
     )
 
-    result = perioperative_checklist_node(state)
+    result = await perioperative_checklist_node(state)
     checklist = result["perioperative_checklist"]
 
     all_items = checklist.sign_in + checklist.time_out + checklist.sign_out
@@ -529,7 +529,7 @@ def test_alert_items_always_have_notes():
     assert_test(test_case, [metric])
 
 
-def test_two_comorbidities_checklist_covers_both():
+async def test_two_comorbidities_checklist_covers_both():
     """Checklist should reference both conditions when two comorbidities are present."""
     state = _make_state(
         66,
@@ -541,7 +541,7 @@ def test_two_comorbidities_checklist_covers_both():
         "Two moderate comorbidities; uncontrolled diabetes escalates concern.",
     )
 
-    result = perioperative_checklist_node(state)
+    result = await perioperative_checklist_node(state)
     checklist = result["perioperative_checklist"]
 
     all_text = " ".join(
@@ -586,11 +586,11 @@ def test_two_comorbidities_checklist_covers_both():
     assert_test(test_case, [metric])
 
 
-def test_no_critical_alerts_for_asa_i():
+async def test_no_critical_alerts_for_asa_i():
     """ASA I patients must not produce critical_alerts."""
     state = _make_state(28, [], "I", "Healthy young adult with no systemic disease.")
 
-    result = perioperative_checklist_node(state)
+    result = await perioperative_checklist_node(state)
     checklist = result["perioperative_checklist"]
 
     assert checklist.overall_status == "clear"

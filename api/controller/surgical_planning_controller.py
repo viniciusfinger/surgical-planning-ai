@@ -9,7 +9,7 @@ router = APIRouter(prefix="/surgical-planning")
 
 
 @router.post("/")
-def create(surgical_planning_input: SurgicalPlanningInput):
+async def create(surgical_planning_input: SurgicalPlanningInput):
     graph = get_graph()
 
     today = date.today()
@@ -25,6 +25,6 @@ def create(surgical_planning_input: SurgicalPlanningInput):
         "urgency": surgical_planning_input.urgency,
     }
 
-    result = graph.invoke(state)
+    result = await graph.ainvoke(state)
 
     return result

@@ -80,13 +80,13 @@ def _all_text(care) -> str:
     return " ".join(parts).lower()
 
 
-def test_healthy_adult_elective_minor_surgery_pacu_or_ward():
+async def test_healthy_adult_elective_minor_surgery_pacu_or_ward():
     """Healthy ASA I patient undergoing elective minor surgery should go to PACU or ward."""
     state = _make_state(
         32, [], "I", "Elective inguinal hernia repair", "elective", "No systemic disease."
     )
 
-    result = postoperative_care_node(state)
+    result = await postoperative_care_node(state)
     care = result["postoperative_care"]
 
     assert care.destination in ("PACU", "ward")
@@ -133,7 +133,7 @@ def test_healthy_adult_elective_minor_surgery_pacu_or_ward():
     assert_test(test_case, [metric])
 
 
-def test_three_prophylaxis_targets_always_covered():
+async def test_three_prophylaxis_targets_always_covered():
     """Every postoperative plan must address TEV, IRAS and NVPO targets."""
     state = _make_state(
         50,
@@ -143,7 +143,7 @@ def test_three_prophylaxis_targets_always_covered():
         "elective",
     )
 
-    result = postoperative_care_node(state)
+    result = await postoperative_care_node(state)
     care = result["postoperative_care"]
 
     targets = _prophylaxis_targets(care)
@@ -185,7 +185,7 @@ def test_three_prophylaxis_targets_always_covered():
     assert_test(test_case, [metric])
 
 
-def test_analgesia_starts_with_non_opioid():
+async def test_analgesia_starts_with_non_opioid():
     """The analgesia plan must always begin with a WHO step_1 (non-opioid) agent."""
     state = _make_state(
         45,
@@ -195,7 +195,7 @@ def test_analgesia_starts_with_non_opioid():
         "elective",
     )
 
-    result = postoperative_care_node(state)
+    result = await postoperative_care_node(state)
     care = result["postoperative_care"]
 
     assert any(a.who_step == "step_1" for a in care.analgesia), (
@@ -235,7 +235,7 @@ def test_analgesia_starts_with_non_opioid():
     assert_test(test_case, [metric])
 
 
-def test_asa_iv_emergency_destination_icu_with_critical_alerts():
+async def test_asa_iv_emergency_destination_icu_with_critical_alerts():
     """ASA IV emergency surgery should be admitted to ICU with critical alerts."""
     state = _make_state(
         72,
@@ -246,7 +246,7 @@ def test_asa_iv_emergency_destination_icu_with_critical_alerts():
         "Severe uncontrolled heart failure with life-threatening systemic disease.",
     )
 
-    result = postoperative_care_node(state)
+    result = await postoperative_care_node(state)
     care = result["postoperative_care"]
 
     assert care.destination == "ICU"
@@ -290,7 +290,7 @@ def test_asa_iv_emergency_destination_icu_with_critical_alerts():
     assert_test(test_case, [metric])
 
 
-def test_chronic_kidney_disease_avoids_nsaids():
+async def test_chronic_kidney_disease_avoids_nsaids():
     """Patients with moderate chronic kidney disease should avoid NSAIDs or flag the conflict."""
     state = _make_state(
         65,
@@ -300,7 +300,7 @@ def test_chronic_kidney_disease_avoids_nsaids():
         "elective",
     )
 
-    result = postoperative_care_node(state)
+    result = await postoperative_care_node(state)
     care = result["postoperative_care"]
 
     nsaid_keywords = ("ibuprofen", "ketorolac", "diclofenac", "naproxen", "nsaid", "aine")
@@ -354,7 +354,7 @@ def test_chronic_kidney_disease_avoids_nsaids():
     assert_test(test_case, [metric])
 
 
-def test_high_apfel_risk_nvpo_multimodal_prophylaxis():
+async def test_high_apfel_risk_nvpo_multimodal_prophylaxis():
     """High Apfel score patient (female, non-smoker, prior NVPO, opioid use) should get multimodal NVPO prophylaxis."""
     state = _make_state(
         38,
@@ -367,7 +367,7 @@ def test_high_apfel_risk_nvpo_multimodal_prophylaxis():
         "elective",
     )
 
-    result = postoperative_care_node(state)
+    result = await postoperative_care_node(state)
     care = result["postoperative_care"]
 
     nvpo_items = [p for p in care.prophylaxis if p.target == "NVPO"]
@@ -414,7 +414,7 @@ def test_high_apfel_risk_nvpo_multimodal_prophylaxis():
     assert_test(test_case, [metric])
 
 
-def test_coagulopathy_tev_conflict_flagged():
+async def test_coagulopathy_tev_conflict_flagged():
     """Active coagulopathy must trigger an alert on TEV pharmacological prophylaxis."""
     state = _make_state(
         58,
@@ -426,7 +426,7 @@ def test_coagulopathy_tev_conflict_flagged():
         "elective",
     )
 
-    result = postoperative_care_node(state)
+    result = await postoperative_care_node(state)
     care = result["postoperative_care"]
 
     tev_items = [p for p in care.prophylaxis if p.target == "TEV"]
@@ -472,7 +472,7 @@ def test_coagulopathy_tev_conflict_flagged():
     assert_test(test_case, [metric])
 
 
-def test_eras_colorectal_specific_items():
+async def test_eras_colorectal_specific_items():
     """Elective colorectal surgery should yield colorectal-specific ERAS items."""
     state = _make_state(
         62,
@@ -482,7 +482,7 @@ def test_eras_colorectal_specific_items():
         "elective",
     )
 
-    result = postoperative_care_node(state)
+    result = await postoperative_care_node(state)
     care = result["postoperative_care"]
 
     eras_text = " ".join(care.eras_recommendations).lower()
@@ -545,7 +545,7 @@ def test_eras_colorectal_specific_items():
     assert_test(test_case, [metric])
 
 
-def test_pediatric_postoperative_care_age_appropriate():
+async def test_pediatric_postoperative_care_age_appropriate():
     """A healthy child should get age-appropriate analgesia and PACU/ward destination."""
     state = _make_state(
         7,
@@ -556,7 +556,7 @@ def test_pediatric_postoperative_care_age_appropriate():
         "Healthy pediatric patient with no systemic disease.",
     )
 
-    result = postoperative_care_node(state)
+    result = await postoperative_care_node(state)
     care = result["postoperative_care"]
 
     assert care.destination in ("PACU", "ward")
@@ -604,7 +604,7 @@ def test_pediatric_postoperative_care_age_appropriate():
     assert_test(test_case, [metric])
 
 
-def test_elderly_multimorbidity_destination_and_alerts():
+async def test_elderly_multimorbidity_destination_and_alerts():
     """Elderly ASA III patient with multiple comorbidities should receive escalated postop care."""
     state = _make_state(
         82,
@@ -619,7 +619,7 @@ def test_elderly_multimorbidity_destination_and_alerts():
         "Multiple moderate comorbidities in elderly patient.",
     )
 
-    result = postoperative_care_node(state)
+    result = await postoperative_care_node(state)
     care = result["postoperative_care"]
 
     assert care.destination in ("ICU", "PACU"), (
@@ -666,7 +666,7 @@ def test_elderly_multimorbidity_destination_and_alerts():
     assert_test(test_case, [metric])
 
 
-def test_severe_copd_thoracic_surgery_respiratory_focus():
+async def test_severe_copd_thoracic_surgery_respiratory_focus():
     """Severe uncontrolled COPD undergoing thoracic surgery should escalate respiratory care."""
     state = _make_state(
         68,
@@ -677,7 +677,7 @@ def test_severe_copd_thoracic_surgery_respiratory_focus():
         "Severe uncontrolled COPD with major respiratory limitation.",
     )
 
-    result = postoperative_care_node(state)
+    result = await postoperative_care_node(state)
     care = result["postoperative_care"]
 
     assert care.destination in ("ICU", "PACU")
@@ -734,7 +734,7 @@ def test_severe_copd_thoracic_surgery_respiratory_focus():
     assert_test(test_case, [metric])
 
 
-def test_discharge_criteria_use_appropriate_scale():
+async def test_discharge_criteria_use_appropriate_scale():
     """Discharge criteria must use Aldrete (PACU) or PADSS (home) coherent with destination."""
     state = _make_state(
         40,
@@ -744,7 +744,7 @@ def test_discharge_criteria_use_appropriate_scale():
         "elective",
     )
 
-    result = postoperative_care_node(state)
+    result = await postoperative_care_node(state)
     care = result["postoperative_care"]
 
     assert len(care.discharge_criteria) >= 1
@@ -785,7 +785,7 @@ def test_discharge_criteria_use_appropriate_scale():
     assert_test(test_case, [metric])
 
 
-def test_follow_up_plan_includes_medication_reconciliation():
+async def test_follow_up_plan_includes_medication_reconciliation():
     """Follow-up for a hypertensive diabetic must include medication reconciliation and education."""
     state = _make_state(
         58,
@@ -798,7 +798,7 @@ def test_follow_up_plan_includes_medication_reconciliation():
         "elective",
     )
 
-    result = postoperative_care_node(state)
+    result = await postoperative_care_node(state)
     care = result["postoperative_care"]
 
     assert len(care.follow_up_plan) >= 2
