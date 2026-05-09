@@ -10,6 +10,209 @@ Clinical decisions remain entirely with the care team; the tool supports them wi
 uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
+## What the API does
+
+The API exposes a single endpoint that orchestrates a multi-step LangGraph
+pipeline. Given a minimal patient profile (date of birth, comorbidities,
+surgical type, urgency), it returns a structured perioperative plan composed of:
+
+- **`asa`** — ASA Physical Status classification with confidence and
+  justification.
+- **`perioperative_checklist`** — Surgical Safety Checklist items grouped by
+  phase (`sign_in`, `time_out`, `sign_out`), plus an `overall_status`,
+  critical alerts and recommendations.
+- **`postoperative_care`** — postoperative destination, multimodal analgesia,
+  prophylaxis (VTE / SSI / PONV), ERAS items, early mobilization,
+  discharge criteria, follow-up plan, and clinical alerts.
+
+The original input fields (`age`, `comorbidities`, `surgical_type`, `urgency`)
+are echoed back alongside the AI-generated sections so the response is
+self-contained and auditable.
+
+### Example
+
+**Request** — `POST /surgical-planning/`
+
+```json
+{
+  "birthdate": "1965-03-15",
+  "comorbidities": [
+    {
+      "name": "Systemic arterial hypertension",
+      "severity": "moderate",
+      "controlled": true
+    },
+    {
+      "name": "Type 2 diabetes mellitus",
+      "severity": "mild",
+      "controlled": false
+    }
+  ],
+  "surgical_type": "Laparoscopic cholecystectomy",
+  "urgency": "elective"
+}
+```
+
+**Response**
+
+```json
+{
+  "age": 61,
+  "comorbidities": [
+    {
+      "name": "Systemic arterial hypertension",
+      "severity": "moderate",
+      "controlled": true
+    },
+    {
+      "name": "Type 2 diabetes mellitus",
+      "severity": "mild",
+      "controlled": false
+    }
+  ],
+  "surgical_type": "Laparoscopic cholecystectomy",
+  "urgency": "elective",
+  "asa": {
+    "asa": "III",
+    "confidence": 0.85,
+    "justification": "The patient has two comorbidities: moderate systemic arterial hypertension, which is controlled, and mild type 2 diabetes mellitus, which is uncontrolled. The presence of a moderate condition, even when controlled, typically suggests an ASA II classification. However, the additional presence of an uncontrolled condition, albeit mild, increases the overall systemic burden. Given the combination of these factors, the classification leans towards ASA III, reflecting a more conservative approach due to the potential perioperative impact of the uncontrolled diabetes."
+  },
+  "perioperative_checklist": {
+    "sign_in": [
+      {
+        "item": "Blood pressure / antihypertensive medication review",
+        "alert": false,
+        "notes": "Reviewing blood pressure and antihypertensive medication is crucial due to the patient's moderate hypertension, ensuring stability before anesthesia."
+      },
+      {
+        "item": "Blood glucose / glycemic control",
+        "alert": true,
+        "notes": "Patient has uncontrolled Type 2 diabetes, necessitating careful monitoring and management of blood glucose levels to prevent perioperative complications."
+      },
+      {
+        "item": "Cardiac stability verification",
+        "alert": true,
+        "notes": "ASA III status and hypertension require verification of cardiac stability to prevent intraoperative hemodynamic instability."
+      }
+    ],
+    "time_out": [
+      {
+        "item": "Blood glucose / glycemic control",
+        "alert": true,
+        "notes": "Continued monitoring of blood glucose levels is essential due to the patient's uncontrolled diabetes, reducing the risk of intraoperative complications."
+      }
+    ],
+    "sign_out": [
+      {
+        "item": "Wound healing considerations",
+        "alert": false,
+        "notes": "Due to diabetes, ensure proper wound care and monitoring to prevent postoperative complications."
+      }
+    ],
+    "overall_status": "hold",
+    "critical_alerts": [],
+    "recommendations": [
+      "Ensure continuous perioperative blood pressure monitoring and continuation of antihypertensive medications.",
+      "Implement glucose monitoring and establish glycemic control targets to manage the patient's diabetes effectively.",
+      "Consider wound healing implications due to diabetes and plan for enhanced postoperative care."
+    ]
+  },
+  "postoperative_care": {
+    "destination": "PACU",
+    "destination_rationale": "The patient is ASA III with moderate systemic arterial hypertension and uncontrolled type 2 diabetes mellitus. Although the laparoscopic cholecystectomy is an elective and minimally invasive procedure, the comorbidities warrant close monitoring in the PACU for potential hemodynamic instability and glycemic control.",
+    "analgesia_recommendation": [
+      {
+        "agent": "Paracetamol",
+        "route": "PO",
+        "dose_or_regimen": "1g q6h",
+        "who_step": "step_1",
+        "notes": "First-line non-opioid analgesic."
+      },
+      {
+        "agent": "Dexamethasone",
+        "route": "IV",
+        "dose_or_regimen": "8mg once",
+        "who_step": "step_1",
+        "notes": "Anti-inflammatory and antiemetic properties."
+      },
+      {
+        "agent": "Tramadol",
+        "route": "PO",
+        "dose_or_regimen": "50mg q8h PRN",
+        "who_step": "step_2",
+        "notes": "Weak opioid added for breakthrough pain if non-opioids are insufficient."
+      }
+    ],
+    "prophylaxis_recommendation": [
+      {
+        "target": "TEV",
+        "intervention": "LMWH (Enoxaparin) 40mg SC daily",
+        "alert": false,
+        "notes": "Moderate risk due to age and ASA class; no contraindications to anticoagulation."
+      },
+      {
+        "target": "IRAS",
+        "intervention": "Single dose of Cefazolin 2g IV pre-op",
+        "alert": false,
+        "notes": "Standard prophylaxis for laparoscopic cholecystectomy."
+      },
+      {
+        "target": "NVPO",
+        "intervention": "Ondansetron 4mg IV q8h PRN",
+        "alert": false,
+        "notes": "Moderate risk due to potential opioid use; ondansetron for prophylaxis."
+      }
+    ],
+    "eras_recommendations": [
+      "Early oral fluid intake within 2 hours post-op.",
+      "Opioid-sparing analgesia strategy.",
+      "Glycemic control with regular monitoring and insulin adjustment.",
+      "Minimization of drains and catheters."
+    ],
+    "early_mobilization": [
+      "Begin mobilization 6 hours post-op with sitting and dangling.",
+      "Encourage ambulation within 24 hours post-op.",
+      "Respiratory physiotherapy due to ASA III status."
+    ],
+    "discharge_criteria": [
+      {
+        "scale": "Aldrete",
+        "minimum_score": 9,
+        "specific_criteria": [
+          "Pain controlled with oral analgesics.",
+          "Stable vital signs.",
+          "Adequate oxygenation without supplemental oxygen."
+        ]
+      },
+      {
+        "scale": "PADSS",
+        "minimum_score": 9,
+        "specific_criteria": [
+          "Tolerating oral intake.",
+          "Ambulating independently.",
+          "Pain and nausea controlled."
+        ]
+      }
+    ],
+    "follow_up_plan": [
+      "Return visit in 7 days for wound assessment and suture removal.",
+      "Medication reconciliation focusing on antihypertensives and antidiabetics.",
+      "Patient education on signs of infection, diet, and activity restrictions.",
+      "Referral to endocrinologist for diabetes management."
+    ],
+    "critical_alerts": [
+      "Monitor for potential glycemic instability due to uncontrolled diabetes."
+    ],
+    "recommendations": [
+      "Encourage a balanced diet with adequate protein for wound healing.",
+      "Target fasting blood glucose <140 mg/dL and postprandial <180 mg/dL.",
+      "Promote sleep hygiene to aid recovery.",
+      "Set rehabilitation goals for gradual increase in physical activity."
+    ]
+  }
+}
+```
+
 ## Tests
 
 LLM-based evaluation suite (DeepEval — requires `OPENAI_API_KEY`):
