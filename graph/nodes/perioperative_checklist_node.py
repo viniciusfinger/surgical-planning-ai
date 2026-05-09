@@ -6,8 +6,6 @@ from langchain_core.prompts import ChatPromptTemplate
 from graph import state
 from graph.schema.perioperative_checklist_output import PerioperativeChecklistOutput
 
-_perf = logging.getLogger("perf")
-
 
 async def perioperative_checklist_node(state: state):
     """
@@ -102,7 +100,6 @@ async def perioperative_checklist_node(state: state):
     chain = prompt | llm
 
     _t0 = time.perf_counter()
-    _perf.info("PERI START t=%.3f", _t0)
     perioperative_checklist = await chain.ainvoke(
         {
             "age": state["age"],
@@ -110,6 +107,5 @@ async def perioperative_checklist_node(state: state):
             "asa": state["asa"].asa
         }
     )
-    _perf.info("PERI END   t=%.3f dur=%.3fs", time.perf_counter(), time.perf_counter() - _t0)
 
     return {"perioperative_checklist": perioperative_checklist}

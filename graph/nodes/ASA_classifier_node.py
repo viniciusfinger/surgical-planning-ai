@@ -6,8 +6,6 @@ from graph.state import GraphState
 from langchain.chat_models import init_chat_model
 from langchain_core.prompts import ChatPromptTemplate
 
-_perf = logging.getLogger("perf")
-
 #TODO: Test approach to run 5 times with temperature > 0.7 and merge the most common result to be the final result
 async def ASA_classifier_node(state: GraphState) -> dict[str, ASAOutput]:
     """
@@ -97,14 +95,11 @@ async def ASA_classifier_node(state: GraphState) -> dict[str, ASAOutput]:
 
     chain = prompt | llm
 
-    _t0 = time.perf_counter()
-    _perf.info("ASA START t=%.3f", _t0)
     asa = await chain.ainvoke(
         {
             "age": state["age"],
             "comorbidities": state["comorbidities"],
         }
     )
-    _perf.info("ASA END   t=%.3f dur=%.3fs", time.perf_counter(), time.perf_counter() - _t0)
 
     return {"asa": asa}
