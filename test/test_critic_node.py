@@ -46,12 +46,12 @@ def _checklist(
 
 def _postop(
     destination: str = "PACU",
-    analgesia: list[AnalgesiaProtocol] | None = None,
+    analgesia_recommendation: list[AnalgesiaProtocol] | None = None,
 ) -> PostoperativeCareOutput:
     return PostoperativeCareOutput(
         destination=destination,
         destination_rationale="ASA II patient with stable hemodynamics.",
-        analgesia=analgesia
+        analgesia_recommendation=analgesia_recommendation
         or [
             AnalgesiaProtocol(
                 agent="Paracetamol",
@@ -60,7 +60,7 @@ def _postop(
                 who_step="step_1",
             )
         ],
-        prophylaxis=[
+        prophylaxis_recommendation=[
             ProphylaxisItem(target="TEV", intervention="LMWH per Caprini score")
         ],
         eras_recommendations=["Early oral intake"],
@@ -186,7 +186,7 @@ class TestNsaidSafety:
                 _comorbidity(comorbidity_name, severity=Severity.severe, controlled=True)
             ],
             postop=_postop(
-                analgesia=[
+                analgesia_recommendation=[
                     AnalgesiaProtocol(
                         agent="Ibuprofen",
                         route="PO",
@@ -217,7 +217,7 @@ class TestNsaidSafety:
         state = _state(
             comorbidities=[_comorbidity("Hypertension")],
             postop=_postop(
-                analgesia=[
+                analgesia_recommendation=[
                     AnalgesiaProtocol(
                         agent="Ibuprofen",
                         route="PO",
@@ -238,7 +238,7 @@ class TestNsaidSafety:
                 )
             ],
             postop=_postop(
-                analgesia=[
+                analgesia_recommendation=[
                     AnalgesiaProtocol(
                         agent="Multimodal analgesia",
                         route="PO",

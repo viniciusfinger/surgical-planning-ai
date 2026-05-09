@@ -35,12 +35,12 @@ def _format_output(care) -> str:
 
     analgesia = "\n".join(
         f"  [{a.who_step}] {a.agent} ({a.route}, {a.dose_or_regimen}) notes={a.notes}"
-        for a in care.analgesia
+        for a in care.analgesia_recommendation
     ) or "  (none)"
 
     prophylaxis = "\n".join(
         f"  [{p.target}] {p.intervention} alert={p.alert} notes={p.notes}"
-        for p in care.prophylaxis
+        for p in care.prophylaxis_recommendation
     ) or "  (none)"
 
     discharge = "\n".join(
@@ -63,13 +63,13 @@ def _format_output(care) -> str:
 
 
 def _prophylaxis_targets(care) -> set:
-    return {p.target for p in care.prophylaxis}
+    return {p.target for p in care.prophylaxis_recommendation}
 
 
 def _all_text(care) -> str:
     parts = [care.destination_rationale]
-    parts += [f"{a.agent} {a.route} {a.dose_or_regimen} {a.notes or ''}" for a in care.analgesia]
-    parts += [f"{p.target} {p.intervention} {p.notes or ''}" for p in care.prophylaxis]
+    parts += [f"{a.agent} {a.route} {a.dose_or_regimen} {a.notes or ''}" for a in care.analgesia_recommendation]
+    parts += [f"{p.target} {p.intervention} {p.notes or ''}" for p in care.prophylaxis_recommendation]
     parts += list(care.eras_recommendations)
     parts += list(care.early_mobilization)
     for d in care.discharge_criteria:
@@ -90,8 +90,8 @@ async def test_healthy_adult_elective_minor_surgery_pacu_or_ward():
     care = result["postoperative_care"]
 
     assert care.destination in ("PACU", "ward")
-    assert len(care.analgesia) >= 1
-    assert any(a.who_step == "step_1" for a in care.analgesia)
+    assert len(care.analgesia_recommendation) >= 1
+    assert any(a.who_step == "step_1" for a in care.analgesia_recommendation)
     assert _prophylaxis_targets(care) == {"TEV", "IRAS", "NVPO"}
     assert len(care.eras_recommendations) >= 1
     assert len(care.early_mobilization) >= 1
@@ -148,7 +148,7 @@ async def test_three_prophylaxis_targets_always_covered():
 
     targets = _prophylaxis_targets(care)
     assert targets == {"TEV", "IRAS", "NVPO"}, f"Missing prophylaxis targets, got {targets}"
-    for p in care.prophylaxis:
+    for p in care.prophylaxis_recommendation:
         assert p.intervention.strip(), f"Empty intervention for {p.target}"
         if p.alert:
             assert p.notes and p.notes.strip(), (
@@ -198,10 +198,10 @@ async def test_analgesia_starts_with_non_opioid():
     result = await postoperative_care_node(state)
     care = result["postoperative_care"]
 
-    assert any(a.who_step == "step_1" for a in care.analgesia), (
+    assert any(a.who_step == "step_1" for a in care.analgesia_recommendation), (
         "At least one step_1 (non-opioid) agent is required."
     )
-    assert not any(a.who_step == "step_3" for a in care.analgesia), (
+    assert not any(a.who_step == "step_3" for a in care.analgesia_recommendation), (
         "Strong opioids (step_3) are not justified for ASA I outpatient surgery."
     )
 
@@ -305,7 +305,7 @@ async def test_chronic_kidney_disease_avoids_nsaids():
 
     nsaid_keywords = ("ibuprofen", "ketorolac", "diclofenac", "naproxen", "nsaid", "aine")
     nsaid_agents = [
-        a for a in care.analgesia
+        a for a in care.analgesia_recommendation
         if any(kw in (a.agent.lower() + " " + (a.notes or "").lower()) for kw in nsaid_keywords)
     ]
 
@@ -370,7 +370,7 @@ async def test_high_apfel_risk_nvpo_multimodal_prophylaxis():
     result = await postoperative_care_node(state)
     care = result["postoperative_care"]
 
-    nvpo_items = [p for p in care.prophylaxis if p.target == "NVPO"]
+    nvpo_items = [p for p in care.prophylaxis_recommendation if p.target == "NVPO"]
     assert len(nvpo_items) >= 1
     nvpo_text = " ".join((p.intervention + " " + (p.notes or "")).lower() for p in nvpo_items)
     assert any(
@@ -429,7 +429,7 @@ async def test_coagulopathy_tev_conflict_flagged():
     result = await postoperative_care_node(state)
     care = result["postoperative_care"]
 
-    tev_items = [p for p in care.prophylaxis if p.target == "TEV"]
+    tev_items = [p for p in care.prophylaxis_recommendation if p.target == "TEV"]
     assert len(tev_items) >= 1
     assert any(p.alert for p in tev_items), (
         "Coagulopathy should trigger alert=True on TEV prophylaxis."
@@ -560,8 +560,8 @@ async def test_pediatric_postoperative_care_age_appropriate():
     care = result["postoperative_care"]
 
     assert care.destination in ("PACU", "ward")
-    assert any(a.who_step == "step_1" for a in care.analgesia)
-    assert not any(a.who_step == "step_3" for a in care.analgesia), (
+    assert any(a.who_step == "step_1" for a in care.analgesia_recommendation)
+    assert not any(a.who_step == "step_3" for a in care.analgesia_recommendation), (
         "Strong opioids are not appropriate for a healthy pediatric tonsillectomy."
     )
 

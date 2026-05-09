@@ -56,13 +56,13 @@ class PostoperativeCareOutput(BaseModel):
     destination_rationale: str = Field(
         description="Clinical justification for the recommended destination based on ASA class, procedure, and comorbidities."
     )
-    analgesia: list[AnalgesiaProtocol] = Field(
+    analgesia_recommendation: list[AnalgesiaProtocol] = Field(
         description=(
             "Multimodal analgesic protocol following the WHO ladder and ERAS principles. "
             "Include at least one non-opioid agent; add opioids only when clinically justified."
         )
     )
-    prophylaxis: list[ProphylaxisItem] = Field(
+    prophylaxis_recommendation: list[ProphylaxisItem] = Field(
         description="Prophylaxis items covering TEV, IRAS, and NVPO, tailored to patient risk profile."
     )
     eras_recommendations: list[str] = Field(

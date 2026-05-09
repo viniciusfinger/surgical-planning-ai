@@ -129,7 +129,7 @@ def _check_nsaid_safety(state: GraphState) -> None:
 
     plan: PostoperativeCareOutput = state["postoperative_care"]
     offenders: list[str] = []
-    for protocol in plan.analgesia:
+    for protocol in plan.analgesia_recommendation:
         haystack = f"{protocol.agent} {protocol.notes or ''}".lower()
         if any(token in haystack for token in NSAID_TOKENS):
             offenders.append(protocol.agent)
@@ -138,7 +138,7 @@ def _check_nsaid_safety(state: GraphState) -> None:
         raise GuardrailViolation(
             rule="nsaid_with_contraindication",
             stage="output",
-            field="postoperative_care.analgesia",
+            field="postoperative_care.analgesia_recommendation",
             detail="NSAID prescribed despite contraindicating comorbidity",
             metadata={"offenders": offenders},
         )
