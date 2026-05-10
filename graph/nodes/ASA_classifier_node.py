@@ -1,10 +1,11 @@
 import logging
 import time
 
-from graph.schema.ASA_output import ASAOutput
-from graph.state import GraphState
 from langchain.chat_models import init_chat_model
 from langchain_core.prompts import ChatPromptTemplate
+
+from graph.schema.ASA_output import ASAOutput
+from graph.state import GraphState
 
 #TODO: Test approach to run 5 times with temperature > 0.7 and merge the most common result to be the final result
 async def ASA_classifier_node(state: GraphState) -> dict[str, ASAOutput]:

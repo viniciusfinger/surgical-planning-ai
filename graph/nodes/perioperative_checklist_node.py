@@ -3,6 +3,7 @@ import time
 
 from langchain.chat_models import init_chat_model
 from langchain_core.prompts import ChatPromptTemplate
+
 from graph import state
 from graph.schema.perioperative_checklist_output import PerioperativeChecklistOutput
 
@@ -34,8 +35,22 @@ async def perioperative_checklist_node(state: state):
         </patient_data>
 
         ## Instructions
-        1. For each phase, generate only the checklist items that are clinically relevant given the patient's
-           specific profile (age, comorbidities, ASA class). Do not produce generic or inapplicable items.
+        1. ALL THREE PHASES (`sign_in`, `time_out`, `sign_out`) MUST be populated with at least
+           one checklist item each, REGARDLESS of how trivial the patient profile is. Empty
+           phases are NEVER acceptable, because the WHO Surgical Safety Checklist defines a
+           universal baseline that always applies. As a minimum, include the following
+           WHO-baseline items in every output (you may rephrase the labels but the underlying
+           checks must be present):
+           - Sign-In (before anesthesia induction): patient identity / consent / surgical site
+             confirmation; allergy check; anesthesia safety / equipment readiness.
+           - Time-Out (before skin incision): team introduction and role confirmation; surgical
+             site and procedure confirmation; antibiotic prophylaxis confirmation; review of
+             critical/anticipated events.
+           - Sign-Out (before leaving the OR): instrument / sponge / needle count; specimen
+             labeling verification; postoperative care plan and key concerns handover.
+           These baseline items have `alert=False` for low-risk patients but MUST still be
+           emitted. Comorbidity-, age- and ASA-driven items (rules 6–8 below) are added IN
+           ADDITION to this baseline, never as a substitute.
         2. Each item must have a concise `item` label (e.g., "Difficult airway assessment") and a `notes` field
            explaining briefly why this item is important in this patient's context.
         3. Set `alert=True` whenever the patient data reveals a specific risk or contraindication for that item

@@ -213,18 +213,99 @@ self-contained and auditable.
 }
 ```
 
-## Tests
+## Tests & Evaluations
 
-LLM-based evaluation suite (DeepEval — requires `OPENAI_API_KEY`):
+The evaluation suite is split in two layers:
+
+- **Deterministic** (`test/test_input_guard_node.py`, `test_critic_node.py`,
+  `test_safety_guards.py`, `test_surgical_planning_input.py`) — pure Python,
+  no LLM calls.
+- **LLM-based** (`test/test_ASA_classification_node.py`,
+  `test_perioperative_checklist_node.py`, `test_postoperative_care_node.py`) —
+  parametrize over versioned `Golden`s living in `evals/datasets/` and apply
+  a mix of deterministic clinical metrics (`evals/metrics/clinical.py`) and
+  `GEval` judges (`evals/presets.py`).
+
+### Run as pytest (CI-friendly)
 
 ```bash
-uv run deepeval test run ./test
+uv run deepeval test run ./test                          # full suite, sequential
+uv run deepeval test run ./test -m asa_exact_match       # filter by metric mark
 ```
 
-Deterministic safety tests only (no LLM calls, fast feedback):
+`-n N` (xdist subprocess parallelism) is **not recommended on Windows when
+the project lives under a path with non-ASCII characters** (e.g.
+`Área de Trabalho`, `Documentos do João`). On those setups xdist crashes
+in `execnet` with `UnicodeEncodeError: ... '\udc81' ... surrogates not
+allowed` and reports "No test cases found". Use the batch runner below
+instead — it parallelizes inside a single process via asyncio and is
+unaffected.
+
+Deterministic tests in isolation (no LLM calls, fast feedback):
 
 ```bash
 uv run pytest test/test_input_guard_node.py test/test_critic_node.py test/test_safety_guards.py test/test_surgical_planning_input.py -v
+```
+
+### Run as a batch evaluation (`evaluate()`)
+
+This path uses the same Goldens and metrics as pytest, but invokes
+`deepeval.evaluate()` directly. It parallelizes via `asyncio` (no
+subprocess spawning), prints a per-category aggregate, and writes a run
+record consumable by Confident AI.
+
+```bash
+uv run python -m evals.run_asa          # ASA classifier only
+uv run python -m evals.run_checklist    # perioperative checklist only
+uv run python -m evals.run_postop       # postoperative care only
+uv run python -m evals.run_all          # all three back-to-back
+```
+
+Tune the parallelism with `--concurrency N` (alias `-c N`) or the
+`EVAL_CONCURRENCY` env var (default 8; set to 1 to debug a single golden):
+
+```powershell
+uv run python -m evals.run_all --concurrency 16
+$env:EVAL_CONCURRENCY = 16; uv run python -m evals.run_all
+```
+
+Each script ends with a table like:
+
+```
+ Metrics
+ -----------------------------------------------------------------------
+ metric                                     mean       pass   errors
+ ASA Exact Match                            0.92       11/12        0
+ ASA Confidence Floor                       1.00       12/12        0
+ ASA Clinical Reasoning                     0.89       11/12        0
+
+ Per-category
+ -----------------------------------------------------------------------
+ category                                   mean       pass
+ elderly_no_comorbidities                   0.94        1/1
+ mild_uncontrolled_hypothyroidism_boundary  0.78        0/1
+ ...
+```
+
+### Adding a new evaluation case
+
+1. Append a `Golden(...)` entry to the relevant file in `evals/datasets/`.
+   Use a unique `category` slug — it doubles as the pytest test id and as
+   the bucket in the per-category aggregate.
+2. (Optional) populate `additional_metadata` with deterministic
+   expectations (`expected_asa`, `expected_destination_in`,
+   `expected_overall_status_in`, `required_keyword_groups`,
+   `forbid_step3`, `min_confidence`).
+3. Run `uv run python -m evals.run_<node>` to validate locally.
+
+### Windows note
+
+If running the batch scripts on PowerShell raises a `UnicodeEncodeError`
+from Rich (DeepEval's UI library), set the terminal to UTF-8 once per
+session:
+
+```powershell
+$env:PYTHONIOENCODING = 'utf-8'
 ```
 
 ## Safety architecture
