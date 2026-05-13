@@ -1,4 +1,3 @@
-import logging
 import time
 
 from langchain.chat_models import init_chat_model
@@ -6,6 +5,21 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from graph import state
 from graph.schema.postoperative_care_output import PostoperativeCareOutput
+from graph.state import CorrectionFeedback
+
+
+def _format_feedback(feedback: list[CorrectionFeedback] | None) -> str:
+    if not feedback:
+        return ""
+    lines = "\n".join(
+        f"  - [{f['rule']}] {f['field']}: {f['detail']}" for f in feedback
+    )
+    return (
+        "\n\n## CORRECTION REQUIRED\n"
+        "Your previous response was rejected by the safety critic. "
+        "You MUST fix ALL of the following violations in your new response:\n"
+        + lines
+    )
 
 
 async def postoperative_care_node(state: state):
@@ -140,6 +154,7 @@ async def postoperative_care_node(state: state):
 
         Be precise, evidence-based, and consistent with current ERAS Society, ASA, and ACSA guidelines.
         Tailor every recommendation to the patient's specific profile — avoid generic statements.
+        {correction_feedback}
         """
     )
 
@@ -156,6 +171,7 @@ async def postoperative_care_node(state: state):
             "asa": state["asa"].asa,
             "surgical_type": state["surgical_type"],
             "urgency": state["urgency"],
+            "correction_feedback": _format_feedback(state.get("postop_feedback")),
         }
     )
 

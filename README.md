@@ -310,16 +310,30 @@ $env:PYTHONIOENCODING = 'utf-8'
 
 ## Safety architecture
 
-The graph is wrapped by two safety stages around the LLM nodes:
+The graph is wrapped by two safety stages around the LLM nodes, with a
+self-correction loop between the critic and the LLM nodes:
 
 ```
 START
-  -> input_guard_node           # pre-LLM: prompt-injection / scope / PII / length
+  -> input_guard_node                     # pre-LLM: prompt-injection / scope / PII / length
   -> ASA_classifier_node
-  -> perioperative_checklist_node
-  -> postoperative_care_node
-  -> critic_node                # post-LLM: deterministic clinical rules + output PII/scope
-  -> END
+  -> perioperative_checklist_node  ──┐
+  -> postoperative_care_node       ──┤
+                                     v
+                                  critic_node   # post-LLM: deterministic clinical rules + output PII/scope
+                                     |
+                      ┌──────────────┴──────────────────────┐
+                      │ violations found (retry < MAX_RETRIES)│
+                      v                                       v
+          perioperative_checklist_node         postoperative_care_node
+          (with correction feedback)           (with correction feedback)
+                      └──────────────┬──────────────────────┘
+                                     v
+                                  critic_node
+                                     |
+                         no violations / MAX_RETRIES hit
+                                     v
+                                    END / HTTP 422
 ```
 
 ### Layers of defense
@@ -335,11 +349,15 @@ START
 3. **Trust-boundary prompts**
   - All three LLM nodes wrap dynamic data inside `<patient_data>...</patient_data>`
    and instruct the model to treat that block as data, never as instructions.
-4. **Deterministic critic** (`graph/nodes/critic_node.py`)
-  - Internal-consistency rules (`overall_status` vs `critical_alerts` vs item-level alerts).
-  - ASA / postoperative destination conflict (ASA IV-V routed to ward).
-  - NSAID safety against contraindicating comorbidities.
-  - Re-validates every free-text field produced by the LLM (PII, scope).
+4. **Deterministic critic + self-correction loop** (`graph/nodes/critic_node.py`)
+  - Correctable violations (R1–R3) are returned as structured `CorrectionFeedback`
+   instead of raising immediately. The graph routes back to the offending LLM
+   node(s) with the feedback injected into the prompt (Reflection pattern).
+  - **R1** — Internal consistency (`overall_status` vs `critical_alerts` vs item-level alerts) → retries `perioperative_checklist_node`.
+  - **R2** — ASA/destination conflict (ASA IV–V routed to ward) → retries `postoperative_care_node`.
+  - **R3** — NSAID safety against contraindicating comorbidities → retries `postoperative_care_node`.
+  - **R4** — Output text safety (PII / scope re-validation) → **hard fail**, not correctable via retry.
+  - After `MAX_RETRIES = 2` failed attempts, any remaining violation raises `GuardrailViolation(rule="max_retries_exceeded")`.
 5. **Domain exception + audit log**
   - All violations raise `safety.exceptions.GuardrailViolation`.
   - The FastAPI handler in `app/main.py` translates them into HTTP 422
@@ -351,5 +369,4 @@ START
 - [ ] Discovery + Implement deterministic tools/functions for clinical scores and calculations (Caprini, Apfel, Lee, ...);
 - [ ] Test + Implement self-consistency with multiple samples in ASA classifier;
 - [ ] Add human-in-the-loop (HITL) routing policy for low confidence, ASA >= III, urgency, pediatrics, or critic conflict;
-- [ ] Discovery + Implementt RAG with mandatory citation and runtime verification of recommendations
-
+- [ ] Discovery + Implement RAG with mandatory citation and runtime verification of recommendations;

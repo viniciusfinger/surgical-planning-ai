@@ -12,6 +12,26 @@ from graph.state import GraphState
 _compiled: CompiledStateGraph | None = None
 
 
+def _route_after_critic(state: GraphState) -> list[str] | str:
+    """
+    Routes back to the LLM node(s) that produced a correctable violation,
+    or ends the graph when the critic finds no issues.
+    """
+    checklist_feedback = state.get("checklist_feedback", [])
+    postop_feedback = state.get("postop_feedback", [])
+
+    if not checklist_feedback and not postop_feedback:
+        return END
+
+    targets: list[str] = []
+    if checklist_feedback:
+        targets.append("perioperative_checklist_node")
+    if postop_feedback:
+        targets.append("postoperative_care_node")
+
+    return targets[0] if len(targets) == 1 else targets
+
+
 def _create_graph() -> CompiledStateGraph:
     graph = StateGraph(GraphState)
     graph.add_node("input_guard_node", input_guard_node)
@@ -26,7 +46,7 @@ def _create_graph() -> CompiledStateGraph:
     graph.add_edge("ASA_classifier_node", "postoperative_care_node")
     graph.add_edge("perioperative_checklist_node", "critic_node")
     graph.add_edge("postoperative_care_node", "critic_node")
-    graph.add_edge("critic_node", END)
+    graph.add_conditional_edges("critic_node", _route_after_critic)
     return graph.compile()
 
 

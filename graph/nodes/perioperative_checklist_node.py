@@ -1,4 +1,3 @@
-import logging
 import time
 
 from langchain.chat_models import init_chat_model
@@ -6,6 +5,21 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from graph import state
 from graph.schema.perioperative_checklist_output import PerioperativeChecklistOutput
+from graph.state import CorrectionFeedback
+
+
+def _format_feedback(feedback: list[CorrectionFeedback] | None) -> str:
+    if not feedback:
+        return ""
+    lines = "\n".join(
+        f"  - [{f['rule']}] {f['field']}: {f['detail']}" for f in feedback
+    )
+    return (
+        "\n\n## CORRECTION REQUIRED\n"
+        "Your previous response was rejected by the safety critic. "
+        "You MUST fix ALL of the following violations in your new response:\n"
+        + lines
+    )
 
 
 async def perioperative_checklist_node(state: state):
@@ -106,6 +120,7 @@ async def perioperative_checklist_node(state: state):
            must be non-empty.
 
         Be precise, evidence-based, and consistent with current WHO and ACSA perioperative safety guidelines.
+        {correction_feedback}
         """
     )
 
@@ -119,7 +134,8 @@ async def perioperative_checklist_node(state: state):
         {
             "age": state["age"],
             "comorbidities": state["comorbidities"],
-            "asa": state["asa"].asa
+            "asa": state["asa"].asa,
+            "correction_feedback": _format_feedback(state.get("checklist_feedback")),
         }
     )
 
