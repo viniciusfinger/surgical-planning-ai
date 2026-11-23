@@ -1,6 +1,7 @@
 from datetime import date
 
 from fastapi import APIRouter
+from langfuse.langchain import CallbackHandler
 
 from api.schema.surgical_planning_input import SurgicalPlanningInput
 from graph.graph import get_graph
@@ -25,6 +26,7 @@ async def create(surgical_planning_input: SurgicalPlanningInput):
         "urgency": surgical_planning_input.urgency,
     }
 
-    result = await graph.ainvoke(state)
+    langfuse_handler = CallbackHandler()
+    result = await graph.ainvoke(state, config={"callbacks": [langfuse_handler]})
 
     return result
