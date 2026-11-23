@@ -5,7 +5,7 @@ import pytest
 from domain.schema.comorbidity import Comorbidity
 from domain.schema.severity import Severity
 from domain.schema.urgency import Urgency
-from graph.nodes.critic_node import critic_node
+from graph.nodes.critic_node import MAX_RETRIES, critic_node
 from graph.schema.ASA_output import ASAOutput
 from graph.schema.perioperative_checklist_output import (
     ChecklistItem,
@@ -93,10 +93,28 @@ def _state(
     }
 
 
+def _assert_passes(state: dict) -> None:
+    result = critic_node(state)
+    assert result["checklist_feedback"] == []
+    assert result["postop_feedback"] == []
+    assert result["violation_history"] == []
+    assert result["retry_count"] == state.get("retry_count", 0)
+
+
+def _violated_rules(state: dict) -> list[dict]:
+    """Run the critic expecting correctable feedback; return all violations."""
+    result = critic_node(state)
+    violations = result["checklist_feedback"] + result["postop_feedback"]
+    assert violations, "expected the critic to report a correctable violation"
+    assert result["violation_history"] == violations
+    assert result["retry_count"] == state.get("retry_count", 0) + 1
+    return violations
+
+
 class TestHappyPath:
     def test_clean_state_passes(self):
         """A coherent ASA II case with paracetamol-only analgesia must pass."""
-        assert critic_node(_state()) == {}
+        _assert_passes(_state())
 
 
 class TestChecklistConsistency:
@@ -108,26 +126,22 @@ class TestChecklistConsistency:
                 critical_alerts=["Severe uncontrolled bleeding risk"],
             )
         )
-        with pytest.raises(GuardrailViolation) as exc_info:
-            critic_node(state)
-        assert exc_info.value.rule == "checklist_clear_with_critical_alerts"
-        assert exc_info.value.stage == "output"
+        violations = _violated_rules(state)
+        assert [v["rule"] for v in violations] == ["checklist_clear_with_critical_alerts"]
 
     def test_blocks_clear_with_alert_items(self):
         """`overall_status='clear'` is incompatible with any item flagged alert=True."""
         state = _state(checklist=_checklist(overall_status="clear", sign_in_alert=True))
-        with pytest.raises(GuardrailViolation) as exc_info:
-            critic_node(state)
-        assert exc_info.value.rule == "checklist_clear_with_alert_items"
+        violations = _violated_rules(state)
+        assert [v["rule"] for v in violations] == ["checklist_clear_with_alert_items"]
 
     def test_blocks_critical_without_alerts(self):
         """`overall_status='critical'` requires at least one critical_alert."""
         state = _state(
             checklist=_checklist(overall_status="critical", critical_alerts=[])
         )
-        with pytest.raises(GuardrailViolation) as exc_info:
-            critic_node(state)
-        assert exc_info.value.rule == "checklist_critical_without_alerts"
+        violations = _violated_rules(state)
+        assert [v["rule"] for v in violations] == ["checklist_critical_without_alerts"]
 
     def test_allows_critical_with_alerts(self):
         """`overall_status='critical'` with non-empty critical_alerts is consistent."""
@@ -137,14 +151,14 @@ class TestChecklistConsistency:
                 critical_alerts=["Unresolved difficult airway"],
             )
         )
-        assert critic_node(state) == {}
+        _assert_passes(state)
 
     def test_allows_hold_with_alert_items(self):
         """`overall_status='hold'` is allowed to have item-level alerts."""
         state = _state(
             checklist=_checklist(overall_status="hold", sign_in_alert=True)
         )
-        assert critic_node(state) == {}
+        _assert_passes(state)
 
 
 class TestAsaDestinationConflict:
@@ -152,21 +166,20 @@ class TestAsaDestinationConflict:
     def test_blocks_high_asa_routed_to_ward(self, asa_class: str):
         """ASA IV and ASA V patients must never be routed to a general ward."""
         state = _state(asa_class=asa_class, postop=_postop(destination="ward"))
-        with pytest.raises(GuardrailViolation) as exc_info:
-            critic_node(state)
-        assert exc_info.value.rule == "asa_destination_conflict"
-        assert exc_info.value.field == "postoperative_care.destination"
+        violations = _violated_rules(state)
+        assert [v["rule"] for v in violations] == ["asa_destination_conflict"]
+        assert violations[0]["field"] == "postoperative_care.destination"
 
     @pytest.mark.parametrize("destination", ["PACU", "ICU"])
     def test_allows_high_asa_routed_to_higher_care(self, destination: str):
         """ASA IV with PACU or ICU is acceptable; only `ward` is blocked."""
         state = _state(asa_class="IV", postop=_postop(destination=destination))
-        assert critic_node(state) == {}
+        _assert_passes(state)
 
     def test_allows_low_asa_routed_to_ward(self):
         """ASA II routed to ward is a normal pathway and must pass."""
         state = _state(asa_class="II", postop=_postop(destination="ward"))
-        assert critic_node(state) == {}
+        _assert_passes(state)
 
 
 class TestNsaidSafety:
@@ -196,9 +209,8 @@ class TestNsaidSafety:
                 ]
             ),
         )
-        with pytest.raises(GuardrailViolation) as exc_info:
-            critic_node(state)
-        assert exc_info.value.rule == "nsaid_with_contraindication"
+        violations = _violated_rules(state)
+        assert [v["rule"] for v in violations] == ["nsaid_with_contraindication"]
 
     def test_allows_paracetamol_with_contraindication(self):
         """Paracetamol-only analgesia is safe even when NSAIDs are forbidden."""
@@ -210,7 +222,7 @@ class TestNsaidSafety:
             ],
             postop=_postop(),
         )
-        assert critic_node(state) == {}
+        _assert_passes(state)
 
     def test_allows_nsaid_without_contraindication(self):
         """NSAIDs are allowed when no contraindicating comorbidity is present."""
@@ -227,7 +239,7 @@ class TestNsaidSafety:
                 ]
             ),
         )
-        assert critic_node(state) == {}
+        _assert_passes(state)
 
     def test_detects_nsaid_in_protocol_notes(self):
         """An NSAID hidden in protocol notes must still trigger the rule."""
@@ -249,9 +261,8 @@ class TestNsaidSafety:
                 ]
             ),
         )
-        with pytest.raises(GuardrailViolation) as exc_info:
-            critic_node(state)
-        assert exc_info.value.rule == "nsaid_with_contraindication"
+        violations = _violated_rules(state)
+        assert [v["rule"] for v in violations] == ["nsaid_with_contraindication"]
 
 
 class TestOutputTextSafety:
@@ -285,3 +296,27 @@ class TestOutputTextSafety:
             critic_node(state)
         assert exc_info.value.stage == "output"
         assert exc_info.value.rule == "out_of_clinical_scope"
+
+
+class TestSelfCorrectionLoop:
+    def test_history_carries_previous_passes_into_block(self):
+        """At MAX_RETRIES the critic blocks and reports the full violation history."""
+        previous = [{"rule": "asa_destination_conflict", "field": None, "detail": None}]
+        state = _state(asa_class="IV", postop=_postop(destination="ward"))
+        state["retry_count"] = MAX_RETRIES
+        state["violation_history"] = previous * MAX_RETRIES
+        with pytest.raises(GuardrailViolation) as exc_info:
+            critic_node(state)
+        exc = exc_info.value
+        assert exc.rule == "max_retries_exceeded"
+        assert exc.stage == "output"
+        assert exc.metadata["retry_count"] == MAX_RETRIES
+        assert [v["rule"] for v in exc.metadata["violation_history"]] == (
+            ["asa_destination_conflict"] * (MAX_RETRIES + 1)
+        )
+
+    def test_correction_on_retry_keeps_retry_count(self):
+        """A clean pass after a retry keeps retry_count and adds nothing to history."""
+        state = _state()
+        state["retry_count"] = 1
+        _assert_passes(state)
