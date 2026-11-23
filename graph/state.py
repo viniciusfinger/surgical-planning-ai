@@ -1,4 +1,5 @@
-from typing import NotRequired, TypedDict
+import operator
+from typing import Annotated, NotRequired, TypedDict
 
 from domain.schema.comorbidity import Comorbidity
 from domain.schema.urgency import Urgency
@@ -24,3 +25,4 @@ class GraphState(TypedDict):
     checklist_feedback: NotRequired[list[CorrectionFeedback]]
     postop_feedback: NotRequired[list[CorrectionFeedback]]
     retry_count: NotRequired[int]
+    violation_history: NotRequired[Annotated[list[CorrectionFeedback], operator.add]]

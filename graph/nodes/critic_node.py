@@ -207,7 +207,8 @@ def critic_node(state: GraphState) -> dict:
     _validate_output_text(state)
 
     retry_count = state.get("retry_count", 0)
-    has_violations = bool(checklist_violations or postop_violations)
+    violations = checklist_violations + postop_violations
+    has_violations = bool(violations)
 
     if has_violations and retry_count >= MAX_RETRIES:
         raise GuardrailViolation(
@@ -215,7 +216,8 @@ def critic_node(state: GraphState) -> dict:
             stage="output",
             detail=f"Self-correction failed after {MAX_RETRIES} attempt(s)",
             metadata={
-                "violations": checklist_violations + postop_violations,
+                "violations": violations,
+                "violation_history": state.get("violation_history", []) + violations,
                 "retry_count": retry_count,
             },
         )
@@ -224,4 +226,5 @@ def critic_node(state: GraphState) -> dict:
         "checklist_feedback": checklist_violations,
         "postop_feedback": postop_violations,
         "retry_count": retry_count + 1 if has_violations else retry_count,
+        "violation_history": violations,
     }
